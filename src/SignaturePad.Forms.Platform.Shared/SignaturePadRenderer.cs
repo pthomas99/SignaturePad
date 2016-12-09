@@ -2,12 +2,24 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
-using Xamarin.Forms;
 using SignaturePad.Forms;
 using SignaturePad.Forms.Platform;
 using Color = Xamarin.Forms.Color;
 using Point = Xamarin.Forms.Point;
-#if WINDOWS_PHONE
+using Xamarin.Forms;
+
+
+#if NETFX_CORE || WINDOWS_UWP
+using System;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.UI.Xaml.Media;
+using Windows.Graphics.Imaging;
+using Xamarin.Forms.Platform.UWP;
+using SignaturePad.Forms.UWP;
+using Windows.Storage.Streams;
+using NativeSignaturePadView = Xamarin.Controls.SignaturePad;
+using NativePoint = Windows.Foundation.Point;
+#elif WINDOWS_PHONE
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ImageTools;
@@ -35,7 +47,9 @@ using NativeColor = Android.Graphics.Color;
 
 [assembly: ExportRenderer(typeof(SignaturePadView), typeof(SignaturePadRenderer))]
 
-#if WINDOWS_PHONE
+#if NETFX_CORE || WINDOWS_UWP
+namespace SignaturePad.Forms.UWP
+#elif WINDOWS_PHONE
 namespace SignaturePad.Forms.WindowsPhone
 #elif __IOS__
 namespace SignaturePad.Forms.iOS
@@ -49,7 +63,7 @@ namespace SignaturePad.Forms.Droid
         {
             base.OnElementChanged(e);
 
-            if (Control == null)
+            if (Control == null && e.NewElement != null)
             {
                 // Instantiate the native control and assign it to the Control property
 #if __ANDROID__
@@ -57,6 +71,7 @@ namespace SignaturePad.Forms.Droid
 #else
                 var native = new NativeSignaturePadView();
 #endif
+
                 SetNativeControl(native);
             }
 
@@ -94,7 +109,23 @@ namespace SignaturePad.Forms.Droid
             if (ctrl != null)
             {
                 var image = ctrl.GetImage();
-#if WINDOWS_PHONE
+#if NETFX_CORE || WINDOWS_UWP
+
+                // http://lunarfrog.com/blog/how-to-save-writeablebitmap-as-png-file
+                InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream();
+                var encoder = BitmapEncoder.CreateAsync((e.ImageFormat == SignatureImageFormat.Png) ? BitmapEncoder.PngEncoderId : BitmapEncoder.JpegEncoderId, stream).AsTask().Result;
+                // Get pixels of the WriteableBitmap object 
+                byte[] pixels = image.PixelBuffer.ToArray();
+                // Save the image file with jpg extension 
+                encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight, (uint)image.PixelWidth, (uint)image.PixelHeight, 96, 96, pixels);
+                encoder.FlushAsync().AsTask().Wait();
+                e.ImageStreamTask = Task.Run<Stream>( () =>
+                {
+                    return stream.AsStream();
+                });
+              
+#elif WINDOWS_PHONE
+
                 ExtendedImage img = null;
                 if (e.ImageFormat == SignatureImageFormat.Png)
                 {
@@ -220,7 +251,7 @@ namespace SignaturePad.Forms.Droid
             if (Element.SignatureLineColor != Color.Default)
             {
                 var color = Element.SignatureLineColor.ToNative();
-#if WINDOWS_PHONE
+#if NETFX_CORE || WINDOWS_UWP ||  WINDOWS_PHONE
                 Control.SignatureLineBrush = new SolidColorBrush(color);
 #else
                 Control.SignatureLineColor = color;
@@ -277,7 +308,7 @@ namespace SignaturePad.Forms.Droid
             else if (property == SignaturePadView.SignatureLineColorProperty.PropertyName)
             {
                 var color = Element.SignatureLineColor.ToNative();
-#if WINDOWS_PHONE
+#if NETFX_CORE || WINDOWS_UWP || WINDOWS_PHONE
                 Control.SignatureLineBrush = new SolidColorBrush(color);
 #else
                 Control.SignatureLineColor = color;
@@ -292,5 +323,7 @@ namespace SignaturePad.Forms.Droid
                 Control.StrokeWidth = Element.StrokeWidth;
             }
         }
+
     }
+
 }

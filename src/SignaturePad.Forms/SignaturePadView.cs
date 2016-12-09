@@ -115,12 +115,12 @@ namespace SignaturePad.Forms
             return args.IsBlank;
         }
 
-        internal event EventHandler<ImageStreamRequestedEventArgs> ImageStreamRequested;
-        internal event EventHandler<IsBlankRequestedEventArgs> IsBlankRequested;
-        internal event EventHandler<PointsEventArgs> PointsRequested;
-        internal event EventHandler<PointsEventArgs> PointsSpecified;
+        public event EventHandler<ImageStreamRequestedEventArgs> ImageStreamRequested;
+        public event EventHandler<IsBlankRequestedEventArgs> IsBlankRequested;
+        public event EventHandler<PointsEventArgs> PointsRequested;
+        public event EventHandler<PointsEventArgs> PointsSpecified;
 
-        internal class ImageStreamRequestedEventArgs : EventArgs
+        public class ImageStreamRequestedEventArgs : EventArgs
         {
             public ImageStreamRequestedEventArgs(SignatureImageFormat imageFormat)
             {
@@ -132,12 +132,12 @@ namespace SignaturePad.Forms
             public Task<Stream> ImageStreamTask { get; set; } = Task.FromResult<Stream>(null);
         }
 
-        internal class IsBlankRequestedEventArgs : EventArgs
+        public class IsBlankRequestedEventArgs : EventArgs
         {
             public bool IsBlank { get; set; } = true;
         }
 
-        internal class PointsEventArgs : EventArgs
+        public class PointsEventArgs : EventArgs
         {
             public IEnumerable<Point> Points { get; set; } = new Point[0];
         }
